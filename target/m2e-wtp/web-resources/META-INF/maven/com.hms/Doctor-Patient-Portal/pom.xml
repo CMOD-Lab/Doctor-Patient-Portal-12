@@ -2,10 +2,18 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.hms</groupId>
 	<artifactId>Doctor-Patient-Portal</artifactId>
-	<packaging>war</packaging>
+	<!-- cr-java-0107: Changed from 'war' to 'jar' to enable executable JAR packaging
+	     with embedded Tomcat for AWS ECS/EKS/Fargate container deployment.
+	     WAR packaging required an external application server; JAR packaging
+	     bundles the embedded Tomcat server for self-contained cloud deployment. -->
+	<packaging>jar</packaging>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>Doctor-Patient-Portal Maven Webapp</name>
 	<url>http://maven.apache.org</url>
+	<properties>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
@@ -14,11 +22,28 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- cr-java-0107: Embedded Tomcat servlet container replaces external app server.
+		     Enables self-contained executable JAR deployment on AWS ECS/EKS/Fargate
+		     without requiring an external Tomcat/JBoss/WebLogic installation. -->
+		<dependency>
+			<groupId>org.apache.tomcat.embed</groupId>
+			<artifactId>tomcat-embed-core</artifactId>
+			<version>9.0.75</version>
+		</dependency>
+
+		<!-- cr-java-0107: Embedded Tomcat JSP/Jasper support for JSP rendering
+		     within the self-contained executable JAR. -->
+		<dependency>
+			<groupId>org.apache.tomcat.embed</groupId>
+			<artifactId>tomcat-embed-jasper</artifactId>
+			<version>9.0.75</version>
+		</dependency>
+
+		<!-- Servlet API - no longer 'provided' scope since embedded Tomcat supplies it -->
 		<dependency>
 			<groupId>javax.servlet</groupId>
 			<artifactId>javax.servlet-api</artifactId>
 			<version>4.0.1</version>
-			<scope>provided</scope>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
@@ -42,14 +67,100 @@
 			<version>3.0.0</version>
 		</dependency>
 
+		<!-- HikariCP connection pool - replaces raw JDBC DriverManager (cr-java-0073) -->
+		<dependency>
+			<groupId>com.zaxxer</groupId>
+			<artifactId>HikariCP</artifactId>
+			<version>5.0.1</version>
+		</dependency>
+
+		<!-- Spring Session Core: distributed session management -->
+		<dependency>
+			<groupId>org.springframework.session</groupId>
+			<artifactId>spring-session-core</artifactId>
+			<version>2.7.4</version>
+		</dependency>
+
+		<!-- Spring Session Data Redis: Amazon ElastiCache for Redis backend -->
+		<dependency>
+			<groupId>org.springframework.session</groupId>
+			<artifactId>spring-session-data-redis</artifactId>
+			<version>2.7.4</version>
+		</dependency>
+
+		<!-- Spring Data Redis: Redis client integration -->
+		<dependency>
+			<groupId>org.springframework.data</groupId>
+			<artifactId>spring-data-redis</artifactId>
+			<version>2.7.14</version>
+		</dependency>
+
+		<!-- Lettuce: Redis client for Amazon ElastiCache connectivity -->
+		<dependency>
+			<groupId>io.lettuce</groupId>
+			<artifactId>lettuce-core</artifactId>
+			<version>6.2.7.RELEASE</version>
+		</dependency>
+
+		<!-- Spring Context: required for Spring Session configuration -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+			<version>5.3.30</version>
+		</dependency>
+
+		<!-- Spring Web: required for Spring Session servlet integration -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-web</artifactId>
+			<version>5.3.30</version>
+		</dependency>
 
 	</dependencies>
 	<build>
 		<plugins>
+			<!-- cr-java-0107: Replaced maven-war-plugin with maven-jar-plugin.
+			     Produces an executable JAR with a Main-Class manifest entry
+			     pointing to com.hms.Main which bootstraps embedded Tomcat. -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-war-plugin</artifactId>
-				<version>3.3.1</version>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.3.0</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>com.hms.Main</mainClass>
+							<addClasspath>true</addClasspath>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+			<!-- cr-java-0107: Maven Assembly plugin bundles all dependencies into a
+			     single fat/uber executable JAR for simplified AWS container deployment.
+			     Replaces the WAR assembly approach that required an external app server. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>3.6.0</version>
+				<configuration>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+					<archive>
+						<manifest>
+							<mainClass>com.hms.Main</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+				<executions>
+					<execution>
+						<id>make-assembly</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 		<finalName>Doctor-Patient-Portal</finalName>

@@ -4,11 +4,54 @@
 
 <web-app>
   <display-name>Archetype Created Web Application</display-name>
+
+  <!--
+    Spring Session – Amazon ElastiCache for Redis (cr-java-0065)
+    The SpringSessionRepositoryFilter intercepts every request and replaces
+    the container-managed HttpSession with a Redis-backed session so that
+    all session state is stored in the shared ElastiCache cluster.  This
+    enables stateless horizontal scaling without sticky sessions.
+    The filter MUST be declared before any other filters or servlets that
+    use HttpSession.
+  -->
+  <filter>
+    <filter-name>springSessionRepositoryFilter</filter-name>
+    <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+    <init-param>
+      <param-name>targetBeanName</param-name>
+      <param-value>springSessionRepositoryFilter</param-value>
+    </init-param>
+  </filter>
+  <filter-mapping>
+    <filter-name>springSessionRepositoryFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+    <dispatcher>REQUEST</dispatcher>
+    <dispatcher>ERROR</dispatcher>
+  </filter-mapping>
+
+  <!--
+    Spring ContextLoaderListener – bootstraps the Spring application context
+    that contains RedisSessionConfig (@EnableRedisHttpSession) so that the
+    SpringSessionRepositoryFilter bean is available to the
+    DelegatingFilterProxy above.
+  -->
+  <listener>
+    <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+  </listener>
+  <context-param>
+    <param-name>contextClass</param-name>
+    <param-value>org.springframework.web.context.support.AnnotationConfigWebApplicationContext</param-value>
+  </context-param>
+  <context-param>
+    <param-name>contextConfigLocation</param-name>
+    <param-value>com.hms.config.RedisSessionConfig</param-value>
+  </context-param>
+
   <servlet>
   	<servlet-name>myuserServlet</servlet-name>
   	<display-name>myuserServlet</display-name>
   	<description></description>
-  	<servlet-class>com.hms.user.servlet.myuserServlet</servlet-class>
+  	<servlet-class>com.hms.user.servlet.MyNewServlet</servlet-class>
   </servlet>
   <servlet>
   	<servlet-name>MyNewServlet</servlet-name>

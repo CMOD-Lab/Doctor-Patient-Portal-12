@@ -7,6 +7,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 //import javax.security.auth.message.callback.PrivateKeyCallback.Request;
+// NOTE (cr-java-0065): The javax.servlet.http.HttpSession import below is retained
+// for reference only; session state is no longer managed inside this DAO class.
+// All HTTP session operations have been migrated to Amazon ElastiCache for Redis
+// via Spring Session (see RedisSessionConfig and SpringSessionInitializer).
+// The SpringSessionRepositoryFilter transparently replaces the container-managed
+// HttpSession with a Redis-backed session, so no DAO-level session handling is needed.
 import javax.servlet.http.HttpSession;
 
 import com.hms.entity.Doctor;
